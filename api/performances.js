@@ -16,7 +16,7 @@ function fetchKopis(path) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => resolve(data));
     });
-    req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
     req.on('error', reject);
   });
 }
@@ -50,22 +50,19 @@ const VENUE_NAME_COORDS = [
   { keys: ['산울림'],        lat: 37.5822, lng: 127.0016 },
   { keys: ['게릴라'],        lat: 37.5812, lng: 127.0032 },
   { keys: ['연우'],          lat: 37.5828, lng: 127.0019 },
-  { keys: ['알과핵'],        lat: 37.5814, lng: 127.0027 },
   { keys: ['수현재'],        lat: 37.5832, lng: 127.0011 },
-  { keys: ['쁘띠'],          lat: 37.5821, lng: 127.0033 },
+  { keys: ['대학로'],        lat: 37.5820, lng: 127.0022 },
 ];
 
 const venueCache = {};
 
 async function getVenueCoords(venueCode, venueName) {
-  if (venueCache[venueCode]) return venueCache[venueCode];
-
+  if (venueCode && venueCache[venueCode]) return venueCache[venueCode];
   if (venueName) {
     for (const v of VENUE_NAME_COORDS) {
       if (v.keys.some(k => venueName.includes(k))) return { lat: v.lat, lng: v.lng };
     }
   }
-
   if (venueCode) {
     try {
       const xml = await fetchKopis(`prfplc/${venueCode}?service=${KOPIS_KEY}`);
@@ -78,7 +75,6 @@ async function getVenueCoords(venueCode, venueName) {
       }
     } catch (e) {}
   }
-
   return {
     lat: 37.5825 + (Math.random() - 0.5) * 0.005,
     lng: 127.0020 + (Math.random() - 0.5) * 0.005,
@@ -92,13 +88,21 @@ module.exports = async (req, res) => {
   try {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
-    const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&signgucode=11110&rows=50&cpage=1`;
+
+    // 대학로 키워드로 검색
+    const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=%EB%8C%80%ED%95%99%EB%A1%9C&rows=50&cpage=1`;
     const xml = await fetchKopis(path);
     const items = parseXML(xml, 'db');
 
-    if (!items.length) return res.status(200).json({ success: true, data: [] });
+    // 결과 없으면 혜화로도 검색
+    let allItems = items;
+    if (items.length === 0) {
+      const path2 = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=%ED%98%9C%ED%99%94&rows=50&cpage=1`;
+      const xml2 = await fetchKopis(path2);
+      allItems = parseXML(xml2, 'db');
+    }
 
-    const perfs = items.map(item => ({
+    const perfs = allItems.map(item => ({
       id: getTagValue(item, 'mt20id'),
       name: getTagValue(item, 'prfnm'),
       startDate: getTagValue(item, 'prfpdfrom'),
