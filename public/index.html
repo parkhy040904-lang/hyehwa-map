@@ -3,451 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="혜화공연지도">
 <meta name="theme-color" content="#fdf6f0">
 <title>혜화 공연 지도 🎭</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   :root {
-    --bg:        #fdf6f0;
-    --surface:   #fffaf6;
-    --card:      #fff8f3;
-    --border:    #f0e4d8;
-    --border2:   #e8d5c4;
-
-    --peach:     #f4a58a;
-    --peach-lt:  #fde8df;
-    --peach-dk:  #e8856a;
-
-    --rose:      #f0a0b0;
-    --rose-lt:   #fce8ed;
-
-    --mint:      #8fcfb8;
-    --mint-lt:   #dff3ec;
-
-    --lavender:  #b8a8d8;
-    --lav-lt:    #ede8f8;
-
-    --butter:    #f5d88a;
-    --butter-lt: #fef6dc;
-
-    --sky:       #90c8e8;
-    --sky-lt:    #ddf0fb;
-
-    --text:      #3a2e28;
-    --text-sub:  #8a7060;
-    --text-dim:  #c0a898;
-
-    --shadow-sm: 0 2px 8px rgba(180,120,80,0.08);
-    --shadow-md: 0 4px 20px rgba(180,120,80,0.12);
-    --shadow-lg: 0 8px 32px rgba(180,120,80,0.16);
-
-    --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
+    --bg:#fdf6f0;--surface:#fffaf6;--card:#fff8f3;--border:#f0e4d8;--border2:#e8d5c4;
+    --peach:#f4a58a;--peach-lt:#fde8df;--peach-dk:#e8856a;
+    --rose:#f0a0b0;--mint:#8fcfb8;--mint-lt:#dff3ec;
+    --lavender:#b8a8d8;--lav-lt:#ede8f8;--butter:#f5d88a;--butter-lt:#fef6dc;
+    --sky:#90c8e8;--text:#3a2e28;--text-sub:#8a7060;--text-dim:#c0a898;
+    --shadow-sm:0 2px 8px rgba(180,120,80,0.08);--shadow-md:0 4px 20px rgba(180,120,80,0.12);
   }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif}
+  body{display:flex;flex-direction:column;height:100dvh}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  header{background:var(--surface);border-bottom:1.5px solid var(--border);padding:env(safe-area-inset-top,0) 0 0;flex-shrink:0;z-index:100}
+  .header-inner{padding:14px 18px 0}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .logo{display:flex;align-items:baseline;gap:6px}
+  .logo-title{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;color:var(--peach-dk);letter-spacing:-0.5px}
+  .logo-sub{font-size:11px;color:var(--text-dim);font-weight:300}
+  .date-chip{font-size:11px;color:var(--text-sub);background:var(--peach-lt);border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-weight:500}
+  .refresh-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border2);background:var(--card);color:var(--text-sub);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:var(--shadow-sm)}
+  .refresh-btn:active{transform:scale(0.92)}
+  .refresh-btn.spinning{animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-  }
+  .filter-wrap{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:0 18px 14px}
+  .filter-wrap::-webkit-scrollbar{display:none}
+  .chip{flex-shrink:0;font-size:12px;font-family:'Noto Sans KR',sans-serif;font-weight:500;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:var(--text-sub);cursor:pointer;transition:all 0.18s;white-space:nowrap;box-shadow:var(--shadow-sm)}
+  .chip:active{transform:scale(0.95)}
+  .chip.active-peach{background:var(--peach);border-color:var(--peach-dk);color:#fff}
+  .chip.active-rose{background:var(--rose);border-color:#d87090;color:#fff}
+  .chip.active-mint{background:var(--mint);border-color:#6ab09a;color:#fff}
+  .chip.active-lavender{background:var(--lavender);border-color:#9878c8;color:#fff}
+  .chip.active-butter{background:var(--butter);border-color:#d8b840;color:#7a5a00}
 
-  body {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh;
-  }
+  #map{flex:1;min-height:0;position:relative;z-index:1}
 
-  /* ── 헤더 ── */
-  header {
-    background: var(--surface);
-    border-bottom: 1.5px solid var(--border);
-    padding: env(safe-area-inset-top, 0) 0 0;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 100;
-  }
+  .map-loading{position:absolute;inset:0;background:rgba(253,246,240,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:50;transition:opacity 0.4s}
+  .map-loading.hidden{opacity:0;pointer-events:none}
+  .loader-wrap{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+  .loader-ring{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--peach);border-radius:50%;animation:spin 0.9s linear infinite}
+  .loader-emoji{font-size:28px;position:absolute;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  .loading-label{font-size:13px;color:var(--text-sub)}
 
-  .header-inner {
-    padding: 14px 18px 0;
-  }
+  .sheet{background:var(--surface);border-top:2px solid var(--border);border-radius:24px 24px 0 0;flex-shrink:0;max-height:52vh;overflow-y:auto;scrollbar-width:none;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1);box-shadow:0 -4px 24px rgba(180,120,80,0.10);padding-bottom:env(safe-area-inset-bottom,0);position:relative;z-index:90}
+  .sheet::-webkit-scrollbar{display:none}
+  .sheet.collapsed{max-height:54px;overflow:hidden}
+  .sheet.collapsed .chevron{transform:rotate(180deg)}
+  .sheet-pill{width:36px;height:4px;background:var(--border2);border-radius:2px;position:absolute;top:6px;left:50%;transform:translateX(-50%)}
+  .sheet-handle{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;cursor:pointer;position:sticky;top:0;background:var(--surface);z-index:10;border-bottom:1px solid var(--border);border-radius:24px 24px 0 0}
+  .sheet-title-row{display:flex;align-items:center;gap:8px}
+  .sheet-title{font-size:14px;font-weight:600;color:var(--text)}
+  .count-pill{font-size:11px;font-weight:700;background:var(--peach);color:#fff;padding:2px 8px;border-radius:12px}
+  .chevron{font-size:13px;color:var(--text-dim);transition:transform 0.3s}
 
-  .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
+  .perf-list{padding:6px 0 8px}
+  .perf-card{display:flex;align-items:stretch;gap:12px;padding:12px 18px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border)}
+  .perf-card:last-child{border-bottom:none}
+  .perf-card:active,.perf-card.highlighted{background:var(--peach-lt)}
+  .perf-thumb{width:48px;height:62px;border-radius:10px;flex-shrink:0;background:var(--peach-lt);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+  .perf-thumb img{width:100%;height:100%;object-fit:cover}
+  .perf-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+  .perf-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Noto Serif KR',serif}
+  .perf-venue{font-size:11px;color:var(--peach-dk);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .perf-tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .tag{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:500;border:1px solid transparent}
+  .tag-genre{background:var(--lav-lt);color:var(--lavender);border-color:#d8cef0}
+  .tag-ongoing{background:var(--mint-lt);color:#4a9a80;border-color:#b8e8d8}
+  .tag-upcoming{background:var(--butter-lt);color:#9a7800;border-color:#f0d880}
+  .perf-date{font-size:10px;color:var(--text-dim)}
 
-  .logo {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
+  .empty{text-align:center;padding:32px 24px;color:var(--text-dim)}
+  .empty-icon{font-size:36px;margin-bottom:10px}
+  .empty-text{font-size:13px;line-height:1.8}
 
-  .logo-title {
-    font-family: 'Noto Serif KR', serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--peach-dk);
-    letter-spacing: -0.5px;
-  }
+  .toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--text);color:#fff;font-size:12px;font-weight:500;padding:9px 18px;border-radius:20px;z-index:999;opacity:0;transition:all 0.3s;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow-md)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  .logo-sub {
-    font-size: 11px;
-    color: var(--text-dim);
-    font-weight: 300;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .date-chip {
-    font-size: 11px;
-    color: var(--text-sub);
-    background: var(--peach-lt);
-    border: 1px solid var(--border);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-  }
-
-  .refresh-btn {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border2);
-    background: var(--card);
-    color: var(--text-sub);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-    box-shadow: var(--shadow-sm);
-  }
-  .refresh-btn:active { transform: scale(0.92); }
-  .refresh-btn.spinning { animation: spin 0.8s linear infinite; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── 필터 스크롤 ── */
-  .filter-wrap {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 0 18px 14px;
-    mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
-  }
-  .filter-wrap::-webkit-scrollbar { display: none; }
-
-  .chip {
-    flex-shrink: 0;
-    font-size: 12px;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-weight: 500;
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1.5px solid var(--border);
-    background: var(--card);
-    color: var(--text-sub);
-    cursor: pointer;
-    transition: all 0.18s;
-    white-space: nowrap;
-    box-shadow: var(--shadow-sm);
-  }
-  .chip:active { transform: scale(0.95); }
-
-  .chip.active-peach   { background: var(--peach);    border-color: var(--peach-dk); color: #fff; box-shadow: 0 2px 10px rgba(244,165,138,0.4); }
-  .chip.active-rose    { background: var(--rose);     border-color: #d87090;         color: #fff; box-shadow: 0 2px 10px rgba(240,160,176,0.4); }
-  .chip.active-mint    { background: var(--mint);     border-color: #6ab09a;         color: #fff; box-shadow: 0 2px 10px rgba(143,207,184,0.4); }
-  .chip.active-lavender{ background: var(--lavender); border-color: #9878c8;         color: #fff; box-shadow: 0 2px 10px rgba(184,168,216,0.4); }
-  .chip.active-butter  { background: var(--butter);   border-color: #d8b840;         color: #7a5a00; box-shadow: 0 2px 10px rgba(245,216,138,0.4); }
-  .chip.active-sky     { background: var(--sky);      border-color: #5aa8d0;         color: #fff; box-shadow: 0 2px 10px rgba(144,200,232,0.4); }
-
-  /* ── 지도 ── */
-  #map {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-  }
-
-  /* ── 로딩 오버레이 ── */
-  .map-loading {
-    position: absolute;
-    inset: 0;
-    background: rgba(253,246,240,0.92);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    z-index: 50;
-    transition: opacity 0.4s;
-  }
-  .map-loading.hidden { opacity: 0; pointer-events: none; }
-
-  .loader-ring {
-    width: 44px; height: 44px;
-    border: 3px solid var(--border);
-    border-top-color: var(--peach);
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-  }
-
-  .loader-emoji { font-size: 28px; position: absolute; animation: pulse 1.4s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
-
-  .loader-wrap { position: relative; width: 44px; height: 44px; display:flex;align-items:center;justify-content:center; }
-
-  .loading-label {
-    font-size: 13px;
-    color: var(--text-sub);
-    font-weight: 400;
-  }
-
-  /* ── 바텀시트 ── */
-  .sheet {
-    background: var(--surface);
-    border-top: 2px solid var(--border);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    flex-shrink: 0;
-    max-height: 52vh;
-    overflow-y: auto;
-    scrollbar-width: none;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -4px 24px rgba(180,120,80,0.10);
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    position: relative;
-    z-index: 90;
-  }
-  .sheet::-webkit-scrollbar { display: none; }
-  .sheet.collapsed { max-height: 54px; overflow: hidden; }
-  .sheet.collapsed .chevron { transform: rotate(180deg); }
-
-  .sheet-handle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px 10px;
-    cursor: pointer;
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    z-index: 10;
-    border-bottom: 1px solid var(--border);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  }
-
-  .sheet-pill {
-    width: 36px; height: 4px;
-    background: var(--border2);
-    border-radius: 2px;
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .sheet-title-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .sheet-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .count-pill {
-    font-size: 11px;
-    font-weight: 700;
-    background: var(--peach);
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 12px;
-    box-shadow: 0 1px 4px rgba(244,165,138,0.4);
-  }
-
-  .chevron {
-    font-size: 13px;
-    color: var(--text-dim);
-    transition: transform 0.3s;
-  }
-
-  /* ── 공연 카드 ── */
-  .perf-list { padding: 6px 0 8px; }
-
-  .perf-card {
-    display: flex;
-    align-items: stretch;
-    gap: 12px;
-    padding: 12px 18px;
-    cursor: pointer;
-    transition: background 0.15s;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
-  .perf-card:last-child { border-bottom: none; }
-  .perf-card:active, .perf-card.highlighted { background: var(--peach-lt); }
-
-  .perf-left {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .perf-thumb {
-    width: 48px; height: 62px;
-    border-radius: var(--radius-sm);
-    object-fit: cover;
-    background: var(--peach-lt);
-    border: 1.5px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-  }
-  .perf-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-  .genre-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .perf-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-
-  .perf-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: 'Noto Serif KR', serif;
-    letter-spacing: -0.2px;
-  }
-
-  .perf-venue {
-    font-size: 11px;
-    color: var(--peach-dk);
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .perf-tags {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-wrap: wrap;
-  }
-
-  .tag {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 6px;
-    font-weight: 500;
-    border: 1px solid transparent;
-  }
-
-  .tag-genre  { background: var(--lav-lt);    color: var(--lavender); border-color: #d8cef0; }
-  .tag-ongoing{ background: var(--mint-lt);   color: #4a9a80;         border-color: #b8e8d8; }
-  .tag-upcoming{background: var(--butter-lt); color: #9a7800;         border-color: #f0d880; }
-  .tag-done   { background: #f5f5f5;          color: #aaa;            border-color: #ddd; }
-
-  .perf-date { font-size: 10px; color: var(--text-dim); }
-
-  .ticket-btn {
-    flex-shrink: 0;
-    align-self: center;
-    font-size: 11px;
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    border: 1.5px solid var(--peach);
-    background: var(--peach-lt);
-    color: var(--peach-dk);
-    font-weight: 600;
-    font-family: 'Noto Sans KR', sans-serif;
-    cursor: pointer;
-    transition: all 0.18s;
-    white-space: nowrap;
-  }
-  .ticket-btn:active { background: var(--peach); color: #fff; transform: scale(0.95); }
-
-  /* ── 빈 상태 / 에러 ── */
-  .empty {
-    text-align: center;
-    padding: 32px 24px;
-    color: var(--text-dim);
-  }
-  .empty-icon { font-size: 36px; margin-bottom: 10px; }
-  .empty-text { font-size: 13px; line-height: 1.8; }
-
-  .error-box {
-    margin: 12px 18px;
-    background: var(--rose-lt);
-    border: 1.5px solid #f0c0cc;
-    border-radius: var(--radius-md);
-    padding: 14px 16px;
-    font-size: 12px;
-    color: #a05060;
-    line-height: 1.8;
-  }
-  .error-box strong { color: #c04060; font-size: 13px; }
-  .error-box code {
-    background: rgba(255,255,255,0.7);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 11px;
-  }
-
-  /* ── 토스트 ── */
-  .toast {
-    position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
-    left: 50%;
-    transform: translateX(-50%) translateY(8px);
-    background: var(--text);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 9px 18px;
-    border-radius: 20px;
-    z-index: 999;
-    opacity: 0;
-    transition: all 0.3s;
-    white-space: nowrap;
-    pointer-events: none;
-    box-shadow: var(--shadow-lg);
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* Leaflet 팝업 커스텀 */
+  .leaflet-popup-content-wrapper{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;box-shadow:var(--shadow-md);padding:0}
+  .leaflet-popup-content{margin:12px 14px;font-family:'Noto Sans KR',sans-serif}
+  .leaflet-popup-tip{background:var(--surface)}
+  .popup-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;font-family:'Noto Serif KR',serif;line-height:1.4}
+  .popup-venue{font-size:11px;color:var(--peach-dk);margin-bottom:3px;font-weight:500}
+  .popup-date{font-size:10px;color:var(--text-dim);margin-bottom:6px}
+  .popup-status{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:600;display:inline-block}
 </style>
 </head>
 <body>
 
-<!-- 헤더 -->
 <header>
   <div class="header-inner">
     <div class="header-top">
@@ -455,13 +106,13 @@
         <span class="logo-title">🎭 혜화공연지도</span>
         <span class="logo-sub">대학로</span>
       </div>
-      <div class="header-right">
-        <div class="date-chip" id="dateChip">로딩중</div>
-        <button class="refresh-btn" id="refreshBtn" onclick="loadData()" title="새로고침">↻</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="date-chip" id="dateChip"></div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">↻</button>
       </div>
     </div>
   </div>
-  <div class="filter-wrap" id="filterWrap">
+  <div class="filter-wrap">
     <button class="chip active-peach" data-genre="전체" onclick="setGenre(this)">전체</button>
     <button class="chip" data-genre="연극" onclick="setGenre(this)">🎭 연극</button>
     <button class="chip" data-genre="뮤지컬" onclick="setGenre(this)">🎵 뮤지컬</button>
@@ -473,7 +124,6 @@
   </div>
 </header>
 
-<!-- 지도 -->
 <div id="map">
   <div class="map-loading" id="mapLoading">
     <div class="loader-wrap">
@@ -484,7 +134,6 @@
   </div>
 </div>
 
-<!-- 바텀시트 -->
 <div class="sheet" id="sheet">
   <div class="sheet-pill"></div>
   <div class="sheet-handle" onclick="toggleSheet()">
@@ -499,314 +148,181 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* ── 설정 ── */
-const API_URL = '/api/performances'; // Vercel 배포 시 자동 연결
+const API_URL = '/api/performances';
 
 const GENRE_EMOJI = {
   '연극':'🎭','뮤지컬':'🎵','서양음악(클래식)':'🎻','클래식':'🎻',
   '한국음악(국악)':'🥁','국악':'🥁','무용(서양/한국무용)':'💃',
-  '대중무용':'💃','무용':'💃','오페라':'🎤','대중음악':'🎸',
-  '서커스/마술':'🎪','복합':'✨'
+  '대중무용':'💃','무용':'💃','오페라':'🎤','대중음악':'🎸','서커스/마술':'🎪','복합':'✨'
 };
 
 const GENRE_COLOR = {
-  '연극':'#f4a58a','뮤지컬':'#f0a0b0','클래식':'#b8a8d8',
-  '서양음악(클래식)':'#b8a8d8','국악':'#f5d88a','한국음악(국악)':'#f5d88a',
-  '무용':'#8fcfb8','무용(서양/한국무용)':'#8fcfb8','대중무용':'#8fcfb8',
-  '오페라':'#90c8e8','대중음악':'#90c8e8','default':'#f4a58a'
+  '연극':'#f4a58a','뮤지컬':'#f0a0b0','클래식':'#b8a8d8','서양음악(클래식)':'#b8a8d8',
+  '국악':'#f5d88a','한국음악(국악)':'#f5d88a','무용':'#8fcfb8','무용(서양/한국무용)':'#8fcfb8',
+  '대중무용':'#8fcfb8','오페라':'#90c8e8','대중음악':'#90c8e8','default':'#f4a58a'
 };
 
-// Fallback 좌표 (KOPIS 좌표 없을 때)
-const FALLBACK = [
-  { keys:['아르코'],       lat:37.5824, lng:127.0018 },
-  { keys:['대학로예술'],   lat:37.5820, lng:127.0025 },
-  { keys:['혜화동1번지'],  lat:37.5836, lng:127.0013 },
-  { keys:['동숭아트'],     lat:37.5815, lng:127.0030 },
-  { keys:['학전'],         lat:37.5830, lng:127.0008 },
-  { keys:['예술공간 혜화'],lat:37.5845, lng:127.0022 },
-  { keys:['선돌'],         lat:37.5808, lng:127.0040 },
-  { keys:['스튜디오76'],   lat:37.5810, lng:127.0015 },
-  { keys:['홍익'],         lat:37.5840, lng:127.0035 },
-  { keys:['마로니에'],     lat:37.5826, lng:127.0020 },
-  { keys:['씨어터'],       lat:37.5818, lng:127.0028 },
-  { keys:['산울림'],       lat:37.5822, lng:127.0016 },
-  { keys:['게릴라'],       lat:37.5812, lng:127.0032 },
+const FALLBACK=[
+  {keys:['아르코'],lat:37.5824,lng:127.0018},{keys:['대학로예술'],lat:37.5820,lng:127.0025},
+  {keys:['혜화동1번지'],lat:37.5836,lng:127.0013},{keys:['동숭아트'],lat:37.5815,lng:127.0030},
+  {keys:['학전'],lat:37.5830,lng:127.0008},{keys:['예술공간 혜화'],lat:37.5845,lng:127.0022},
+  {keys:['선돌'],lat:37.5808,lng:127.0040},{keys:['스튜디오76'],lat:37.5810,lng:127.0015},
+  {keys:['홍익'],lat:37.5840,lng:127.0035},{keys:['마로니에'],lat:37.5826,lng:127.0020},
+  {keys:['씨어터'],lat:37.5818,lng:127.0028},{keys:['산울림'],lat:37.5822,lng:127.0016},
+  {keys:['게릴라'],lat:37.5812,lng:127.0032},{keys:['연우'],lat:37.5828,lng:127.0019},
+  {keys:['대학로'],lat:37.5820,lng:127.0022},
 ];
 
-const HYEHWA_CENTER = { lat: 37.5825, lng: 127.0020 };
+const CENTER=[37.5825,127.0020];
+let map, markers=[], allPerfs=[], filteredPerfs=[];
+let currentGenre='전체', currentStatus=null;
 
-let map, markers=[], infowindows=[], allPerfs=[], filteredPerfs=[];
-let currentGenre='전체', currentStatus=null, openIdx=-1;
+// 날짜
+const today=new Date();
+document.getElementById('dateChip').textContent=`${today.getMonth()+1}월 ${today.getDate()}일`;
 
-/* ── 날짜 ── */
-const today = new Date();
-document.getElementById('dateChip').textContent =
-  `${today.getMonth()+1}월 ${today.getDate()}일`;
+// Leaflet 지도 초기화
+map = L.map('map',{center:CENTER,zoom:16,zoomControl:true});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap',maxZoom:19
+}).addTo(map);
 
-/* ── 카카오맵 ── */
-function initMap() {
-  map = new kakao.maps.Map(document.getElementById('map'), {
-    center: new kakao.maps.LatLng(HYEHWA_CENTER.lat, HYEHWA_CENTER.lng),
-    level: 4
-  });
-  loadData();
-}
+loadData();
 
-/* ── 데이터 로드 ── */
-async function loadData() {
-  const btn = document.getElementById('refreshBtn');
+async function loadData(){
+  const btn=document.getElementById('refreshBtn');
   btn.classList.add('spinning');
   document.getElementById('mapLoading').classList.remove('hidden');
-
-  try {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error('서버 응답 오류');
-    const json = await res.json();
-
-    if (json.success && json.data?.length > 0) {
-      allPerfs = json.data.map(p => applyFallbackCoords(p));
-      filteredPerfs = allPerfs;
+  try{
+    const res=await fetch(API_URL);
+    const json=await res.json();
+    if(json.success&&json.data?.length>0){
+      allPerfs=json.data.map(p=>applyFallback(p));
+      filteredPerfs=allPerfs;
       applyFilter();
-      showToast(`🎭 ${allPerfs.length}개 공연 불러왔어요!`);
+      showToast(`🎭 ${allPerfs.length}개 공연!`);
     } else {
       showError();
     }
-  } catch(e) {
-    console.error(e);
-    showError();
-  } finally {
+  }catch(e){showError();}
+  finally{
     document.getElementById('mapLoading').classList.add('hidden');
     btn.classList.remove('spinning');
   }
 }
 
-function applyFallbackCoords(p) {
-  if (p.lat && p.lng) return p;
-  if (p.venue) {
-    for (const fb of FALLBACK) {
-      if (fb.keys.some(k => p.venue.includes(k))) {
-        return { ...p, lat: fb.lat, lng: fb.lng };
-      }
+function applyFallback(p){
+  if(p.lat&&p.lng) return p;
+  if(p.venue){
+    for(const fb of FALLBACK){
+      if(fb.keys.some(k=>p.venue.includes(k))) return{...p,lat:fb.lat,lng:fb.lng};
     }
   }
-  // 혜화 중심 주변 랜덤
-  return {
-    ...p,
-    lat: HYEHWA_CENTER.lat + (Math.random()-0.5)*0.006,
-    lng: HYEHWA_CENTER.lng + (Math.random()-0.5)*0.006,
-  };
+  return{...p,lat:CENTER[0]+(Math.random()-0.5)*0.006,lng:CENTER[1]+(Math.random()-0.5)*0.006};
 }
 
-/* ── 렌더 ── */
-function applyFilter() {
-  filteredPerfs = allPerfs.filter(p => {
-    const g = currentGenre === '전체' || (p.genre||'').includes(currentGenre);
-    const s = !currentStatus || p.status === currentStatus;
-    return g && s;
+function applyFilter(){
+  filteredPerfs=allPerfs.filter(p=>{
+    const g=currentGenre==='전체'||(p.genre||'').includes(currentGenre);
+    const s=!currentStatus||p.status===currentStatus;
+    return g&&s;
   });
-  openIdx = -1;
   renderMarkers();
   renderList();
 }
 
-/* ── 마커 ── */
-function renderMarkers() {
-  markers.forEach(m => m.setMap(null));
-  infowindows.forEach(iw => iw.setMap(null));
-  markers = []; infowindows = [];
-
-  filteredPerfs.forEach((p, i) => {
-    const emoji = GENRE_EMOJI[p.genre] || '🎭';
-    const color = GENRE_COLOR[p.genre] || GENRE_COLOR.default;
-    const isOn = p.status === '공연중';
-
-    // 마커 DOM
-    const wrap = document.createElement('div');
-    wrap.style.cssText = `
-      background:${isOn ? color : '#e8e0d8'};
-      border:2.5px solid ${isOn ? 'white' : '#c8b8a8'};
-      border-radius:50%;
-      width:34px;height:34px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:16px;
-      box-shadow:0 3px 12px rgba(0,0,0,0.15);
-      cursor:pointer;
-      transition:transform 0.15s;
-    `;
-    wrap.textContent = emoji;
-    wrap.addEventListener('mouseenter', () => wrap.style.transform = 'scale(1.15)');
-    wrap.addEventListener('mouseleave', () => wrap.style.transform = 'scale(1)');
-    wrap.addEventListener('click', () => clickMarker(i));
-
-    const marker = new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(p.lat, p.lng),
-      content: wrap,
-      zIndex: 3,
+function renderMarkers(){
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+  filteredPerfs.forEach((p,i)=>{
+    const emoji=GENRE_EMOJI[p.genre]||'🎭';
+    const color=GENRE_COLOR[p.genre]||GENRE_COLOR.default;
+    const isOn=p.status==='공연중';
+    const icon=L.divIcon({
+      html:`<div style="background:${isOn?color:'#e8e0d8'};border:2.5px solid ${isOn?'white':'#c8b8a8'};border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 3px 12px rgba(0,0,0,0.15);cursor:pointer;">${emoji}</div>`,
+      className:'',iconSize:[34,34],iconAnchor:[17,17]
     });
-
-    // 인포 팝업
-    const info = document.createElement('div');
-    info.style.cssText = `
-      background:#fffaf6;
-      border:1.5px solid #f0e4d8;
-      border-radius:14px;
-      padding:12px 14px;
-      min-width:175px;max-width:220px;
-      box-shadow:0 6px 24px rgba(180,120,80,0.18);
-      font-family:'Noto Sans KR',sans-serif;
-      margin-bottom:10px;
-      animation:fadeIn 0.2s ease;
+    const statusStyle=isOn
+      ?'background:#dff3ec;color:#4a9a80;border:1px solid #b8e8d8'
+      :'background:#fef6dc;color:#9a7800;border:1px solid #f0d880';
+    const popup=`
+      <div class="popup-name">${p.name}</div>
+      <div class="popup-venue">📍 ${p.venue}</div>
+      <div class="popup-date">${p.startDate} ~ ${p.endDate}</div>
+      <span class="popup-status" style="${statusStyle}">${p.status}</span>
     `;
-    info.innerHTML = `
-      <style>@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}</style>
-      <div style="font-size:13px;font-weight:600;color:#3a2e28;margin-bottom:4px;line-height:1.4;font-family:'Noto Serif KR',serif;">${p.name}</div>
-      <div style="font-size:11px;color:#e8856a;margin-bottom:3px;font-weight:500;">${p.venue}</div>
-      <div style="font-size:10px;color:#c0a898;margin-bottom:7px;">${p.startDate} ~ ${p.endDate}</div>
-      <span style="
-        font-size:10px;padding:3px 8px;border-radius:8px;font-weight:600;
-        background:${isOn ? '#dff3ec' : '#fef6dc'};
-        color:${isOn ? '#4a9a80' : '#9a7800'};
-        border:1px solid ${isOn ? '#b8e8d8' : '#f0d880'};
-      ">${p.status}</span>
-    `;
-
-    const infoOverlay = new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(p.lat, p.lng),
-      content: info,
-      yAnchor: 1.12,
-      zIndex: 4,
-    });
-    infoOverlay.setMap(null);
-
-    marker.setMap(map);
-    markers.push(marker);
-    infowindows.push(infoOverlay);
+    const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(popup,{maxWidth:220});
+    m.on('click',()=>highlightCard(i));
+    markers.push(m);
   });
 }
 
-function clickMarker(idx) {
-  if (openIdx === idx) {
-    infowindows[idx].setMap(null);
-    openIdx = -1;
-  } else {
-    if (openIdx >= 0) infowindows[openIdx].setMap(null);
-    infowindows[idx].setMap(map);
-    openIdx = idx;
-    map.panTo(new kakao.maps.LatLng(filteredPerfs[idx].lat, filteredPerfs[idx].lng));
-    highlightCard(idx);
-  }
-}
-
-/* ── 리스트 ── */
-function renderList() {
-  const list = document.getElementById('perfList');
-  document.getElementById('countPill').textContent = filteredPerfs.length;
-
-  if (!filteredPerfs.length) {
-    list.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🎭</div>
-        <div class="empty-text">해당하는 공연이 없어요</div>
-      </div>`;
+function renderList(){
+  const list=document.getElementById('perfList');
+  document.getElementById('countPill').textContent=filteredPerfs.length;
+  if(!filteredPerfs.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🎭</div><div class="empty-text">해당하는 공연이 없어요</div></div>';
     return;
   }
-
-  list.innerHTML = filteredPerfs.map((p, i) => {
-    const emoji = GENRE_EMOJI[p.genre] || '🎭';
-    const color = GENRE_COLOR[p.genre] || GENRE_COLOR.default;
-    const isOn = p.status === '공연중';
-    const statusClass = isOn ? 'tag-ongoing' : (p.status === '공연예정' ? 'tag-upcoming' : 'tag-done');
-
-    return `
-      <div class="perf-card" id="card-${i}" onclick="focusPerf(${i})">
-        <div class="perf-left">
-          <div class="perf-thumb">
-            ${p.poster
-              ? `<img src="${p.poster}" onerror="this.parentElement.innerHTML='${emoji}'" loading="lazy">`
-              : emoji}
-          </div>
+  list.innerHTML=filteredPerfs.map((p,i)=>{
+    const emoji=GENRE_EMOJI[p.genre]||'🎭';
+    const isOn=p.status==='공연중';
+    return`<div class="perf-card" id="card-${i}" onclick="focusPerf(${i})">
+      <div class="perf-thumb">${p.poster?`<img src="${p.poster}" onerror="this.parentElement.innerHTML='${emoji}'" loading="lazy">`:emoji}</div>
+      <div class="perf-body">
+        <div class="perf-name">${p.name}</div>
+        <div class="perf-venue">📍 ${p.venue}</div>
+        <div class="perf-tags">
+          <span class="tag tag-genre">${p.genre||'기타'}</span>
+          <span class="tag ${isOn?'tag-ongoing':'tag-upcoming'}">${p.status}</span>
         </div>
-        <div class="perf-body">
-          <div class="perf-name">${p.name}</div>
-          <div class="perf-venue">📍 ${p.venue}</div>
-          <div class="perf-tags">
-            <span class="tag tag-genre">${p.genre || '기타'}</span>
-            <span class="tag ${statusClass}">${p.status}</span>
-          </div>
-          <div class="perf-date">${p.startDate} ~ ${p.endDate}</div>
-        </div>
+        <div class="perf-date">${p.startDate} ~ ${p.endDate}</div>
       </div>
-    `;
+    </div>`;
   }).join('');
 }
 
-function focusPerf(idx) {
-  map.panTo(new kakao.maps.LatLng(filteredPerfs[idx].lat, filteredPerfs[idx].lng));
-  map.setLevel(3);
-  clickMarker(idx);
-  // 시트 접기 (지도 보이게)
+function focusPerf(i){
+  map.setView([filteredPerfs[i].lat,filteredPerfs[i].lng],17);
+  markers[i]?.openPopup();
   document.getElementById('sheet').classList.add('collapsed');
+  highlightCard(i);
 }
 
-function highlightCard(idx) {
-  document.querySelectorAll('.perf-card').forEach((el, i) => {
-    el.classList.toggle('highlighted', i === idx);
-  });
-  document.getElementById(`card-${idx}`)?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+function highlightCard(i){
+  document.querySelectorAll('.perf-card').forEach((el,j)=>el.classList.toggle('highlighted',j===i));
+  document.getElementById(`card-${i}`)?.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-/* ── 필터 ── */
-const CHIP_COLORS = {
-  '전체':'active-peach','연극':'active-peach','뮤지컬':'active-rose',
-  '클래식':'active-lavender','국악':'active-butter','무용':'active-mint',
-  '공연중':'active-mint','공연예정':'active-butter'
-};
+const CHIP_COLORS={'전체':'active-peach','연극':'active-peach','뮤지컬':'active-rose','클래식':'active-lavender','국악':'active-butter','무용':'active-mint','공연중':'active-mint','공연예정':'active-butter'};
 
-function setGenre(btn) {
-  document.querySelectorAll('[data-genre]').forEach(b => b.className = 'chip');
-  btn.className = `chip ${CHIP_COLORS[btn.dataset.genre] || 'active-peach'}`;
-  currentGenre = btn.dataset.genre;
+function setGenre(btn){
+  document.querySelectorAll('[data-genre]').forEach(b=>b.className='chip');
+  btn.className=`chip ${CHIP_COLORS[btn.dataset.genre]||'active-peach'}`;
+  currentGenre=btn.dataset.genre;
   applyFilter();
 }
 
-function setStatus(btn) {
-  if (currentStatus === btn.dataset.status) {
-    btn.className = 'chip';
-    currentStatus = null;
-  } else {
-    document.querySelectorAll('[data-status]').forEach(b => b.className = 'chip');
-    btn.className = `chip ${CHIP_COLORS[btn.dataset.status] || 'active-mint'}`;
-    currentStatus = btn.dataset.status;
-  }
+function setStatus(btn){
+  if(currentStatus===btn.dataset.status){btn.className='chip';currentStatus=null;}
+  else{document.querySelectorAll('[data-status]').forEach(b=>b.className='chip');btn.className=`chip ${CHIP_COLORS[btn.dataset.status]||'active-mint'}`;currentStatus=btn.dataset.status;}
   applyFilter();
 }
 
-/* ── 시트 토글 ── */
-function toggleSheet() {
-  document.getElementById('sheet').classList.toggle('collapsed');
+function toggleSheet(){document.getElementById('sheet').classList.toggle('collapsed')}
+
+function showError(){
+  document.getElementById('perfList').innerHTML='<div class="empty"><div class="empty-icon">😢</div><div class="empty-text">공연 정보를 불러오지 못했어요<br>↻ 버튼을 눌러 다시 시도해보세요</div></div>';
+  document.getElementById('countPill').textContent='0';
 }
 
-/* ── 에러 표시 ── */
-function showError() {
-  document.getElementById('perfList').innerHTML = `
-    <div class="error-box">
-      <strong>⚠️ 데이터를 불러오지 못했어요</strong><br>
-      로컬에서 테스트하려면 터미널에서<br>
-      <code>node server.js</code> 실행 후 새로고침!<br><br>
-      Vercel에 배포하면 자동으로 작동해요 🚀
-    </div>`;
-  document.getElementById('countPill').textContent = '0';
-}
-
-/* ── 토스트 ── */
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0dad24da06c62ebf54e664a8656fb043&libraries=services&onload=initMap"></script>
 </body>
 </html>
