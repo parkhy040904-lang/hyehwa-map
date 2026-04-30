@@ -1,0 +1,8 @@
+{
+  "name": "hyehwa-map",
+  "version": "1.0.0",
+  "description": "혜화/대학로 공연 지도",
+  "engines": {
+    "node": ">=18"
+  }
+}
