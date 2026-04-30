@@ -1,5 +1,4 @@
 const http = require('http');
-
 const KOPIS_KEY = '541d34303da04a91bbe6919b7f130bbc';
 
 function getDateStr(offsetMonths = 0) {
@@ -52,6 +51,14 @@ const VENUE_NAME_COORDS = [
   { keys: ['연우'],          lat: 37.5828, lng: 127.0019 },
   { keys: ['수현재'],        lat: 37.5832, lng: 127.0011 },
   { keys: ['대학로'],        lat: 37.5820, lng: 127.0022 },
+  { keys: ['혜화'],          lat: 37.5825, lng: 127.0020 },
+  { keys: ['동숭'],          lat: 37.5817, lng: 127.0026 },
+  { keys: ['단막'],          lat: 37.5813, lng: 127.0029 },
+  { keys: ['드림시어터'],    lat: 37.5819, lng: 127.0024 },
+  { keys: ['나온'],          lat: 37.5823, lng: 127.0017 },
+  { keys: ['자유'],          lat: 37.5811, lng: 127.0031 },
+  { keys: ['눈빛'],          lat: 37.5829, lng: 127.0010 },
+  { keys: ['플러스'],        lat: 37.5816, lng: 127.0027 },
 ];
 
 const venueCache = {};
@@ -69,37 +76,34 @@ async function getVenueCoords(venueCode, venueName) {
       const item = parseXML(xml, 'db')[0] || '';
       const lat = parseFloat(getTagValue(item, 'la'));
       const lng = parseFloat(getTagValue(item, 'lo'));
-      if (lat && lng) {
-        venueCache[venueCode] = { lat, lng };
-        return { lat, lng };
-      }
+      if (lat && lng) { venueCache[venueCode] = { lat, lng }; return { lat, lng }; }
     } catch (e) {}
   }
-  return {
-    lat: 37.5825 + (Math.random() - 0.5) * 0.005,
-    lng: 127.0020 + (Math.random() - 0.5) * 0.005,
-  };
+  return { lat: 37.5825 + (Math.random() - 0.5) * 0.005, lng: 127.0020 + (Math.random() - 0.5) * 0.005 };
 }
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-
   try {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
 
-    // 대학로 키워드로 검색
-    const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=%EB%8C%80%ED%95%99%EB%A1%9C&rows=50&cpage=1`;
-    const xml = await fetchKopis(path);
-    const items = parseXML(xml, 'db');
+    // 대학로 + 혜화 + 동숭 세 가지로 검색해서 합치기
+    const keywords = ['%EB%8C%80%ED%95%99%EB%A1%9C', '%ED%98%9C%ED%99%94', '%EB%8F%99%EC%88%AD'];
+    const allItems = [];
+    const seenIds = new Set();
 
-    // 결과 없으면 혜화로도 검색
-    let allItems = items;
-    if (items.length === 0) {
-      const path2 = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=%ED%98%9C%ED%99%94&rows=50&cpage=1`;
-      const xml2 = await fetchKopis(path2);
-      allItems = parseXML(xml2, 'db');
+    for (const kw of keywords) {
+      try {
+        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=${kw}&rows=100&cpage=1`;
+        const xml = await fetchKopis(path);
+        const items = parseXML(xml, 'db');
+        for (const item of items) {
+          const id = getTagValue(item, 'mt20id');
+          if (!seenIds.has(id)) { seenIds.add(id); allItems.push(item); }
+        }
+      } catch(e) {}
     }
 
     const perfs = allItems.map(item => ({
@@ -123,7 +127,6 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ success: true, data: withCoords });
   } catch (e) {
-    console.error('API Error:', e.message);
     res.status(500).json({ success: false, error: e.message });
   }
 };
