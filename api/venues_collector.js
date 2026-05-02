@@ -28,50 +28,45 @@ function parseXML(xml, tag) {
   return results;
 }
 
-// 알려진 코드 범위를 배치로 조회
-async function scanVenueCodes(start, end, batchSize = 20) {
-  const results = [];
-  const codes = [];
-  for (let i = start; i <= end; i++) {
-    codes.push(`FC${String(i).padStart(6, '0')}`);
-  }
-
-  // 배치로 병렬 조회
-  for (let i = 0; i < codes.length; i += batchSize) {
-    const batch = codes.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(async (code) => {
-      try {
-        const xml = await fetchKopis(`prfplc/${code}?service=${KOPIS_KEY}`);
-        const item = parseXML(xml, 'db')[0] || '';
-        if (!item) return null;
-        const chartr = getTagValue(item, 'fcltychartr');
-        if (!chartr.includes('대학로')) return null;
-        const lat = parseFloat(getTagValue(item, 'la'));
-        const lng = parseFloat(getTagValue(item, 'lo'));
-        if (!lat || !lng) return null;
-        return {
-          code,
-          name: getTagValue(item, 'fcltynm'),
-          lat, lng, chartr
-        };
-      } catch(e) { return null; }
-    }));
-    results.push(...batchResults.filter(Boolean));
-  }
-  return results;
+// 혜화/대학로 좌표 범위
+function isHyehwa(lat, lng) {
+  return lat >= 37.576 && lat <= 37.590 && lng >= 126.995 && lng <= 127.010;
 }
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  const { from = 1000, to = 1600 } = req.query || {};
+  const from = parseInt((req.query || {}).from || 1000);
+  const to = parseInt((req.query || {}).to || 1100);
 
   try {
-    const venues = await scanVenueCodes(parseInt(from), parseInt(to));
+    const codes = [];
+    for (let i = from; i <= to; i++) {
+      codes.push(`FC${String(i).padStart(6, '0')}`);
+    }
+
+    const results = await Promise.all(codes.map(async (code) => {
+      try {
+        const xml = await fetchKopis(`prfplc/${code}?service=${KOPIS_KEY}`);
+        const item = parseXML(xml, 'db')[0] || '';
+        if (!item) return null;
+        const lat = parseFloat(getTagValue(item, 'la'));
+        const lng = parseFloat(getTagValue(item, 'lo'));
+        if (!isHyehwa(lat, lng)) return null;
+        return {
+          code,
+          name: getTagValue(item, 'fcltynm'),
+          lat, lng,
+          chartr: getTagValue(item, 'fcltychartr')
+        };
+      } catch(e) { return null; }
+    }));
+
+    const venues = results.filter(Boolean);
     res.status(200).json({
       success: true,
-      scanned: parseInt(to) - parseInt(from) + 1,
+      range: `FC${String(from).padStart(6,'0')} ~ FC${String(to).padStart(6,'0')}`,
       found: venues.length,
       venues
     });
