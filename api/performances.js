@@ -34,265 +34,91 @@ function parseXML(xml, tag) {
   return results;
 }
 
-const VENUE_COORDS = {
-  'NOL 씨어터 대학로 (구. 대학로뮤지컬센터)': { lat: 37.5803, lng: 127.0014 },
-  '유니플렉스': { lat: 37.58102, lng: 127.0025 },
-  '링크아트센터드림': { lat: 37.58129, lng: 127.0015 },
-  '예스24 스테이지(구. DCF대명문화공장)': { lat: 37.58093, lng: 127.0025 },
-  '링크아트센터': { lat: 37.58297, lng: 127.0013 },
-  'JTN 아트홀(구. 대학로예술마당)': { lat: 37.58188, lng: 127.003 },
-  '홍익대 대학로 아트센터': { lat: 37.583, lng: 127.002 },
-  '예스24아트원(구.대학로아트원씨어터)': { lat: 37.58099, lng: 127.0025 },
-  'NOL 서경스퀘어(구. 서경대학교 공연예술센터)': { lat: 37.58144, lng: 127.0015 },
-  '한예극장': { lat: 37.58188, lng: 127.003 },
-  '동양예술극장(구. 아트센터K)': { lat: 37.58297, lng: 127.0013 },
-  '티오엠씨어터(구. 문화공간필링)': { lat: 37.58065, lng: 127.0028 },
-  '민송아트홀 (구. 브로드웨이아트홀)': { lat: 37.583, lng: 127.0022 },
-  '링크더스페이스(LINK THE SPACE)': { lat: 37.58065, lng: 127.0028 },
-  '동덕여대공연예술센터': { lat: 37.58138, lng: 127.0015 },
-  '한성아트홀(구. 인켈아트홀)': { lat: 37.5813, lng: 127.0012 },
-  '미마지아트센터': { lat: 37.5845, lng: 127.0012 },
-  '명작극장 (구. 아츠플레이씨어터)': { lat: 37.5808, lng: 127.0028 },
-  '대학로 판타스틱전용관': { lat: 37.5832, lng: 127.0022 },
-  '학전 (폐관)': { lat: 37.58108, lng: 127.0025 },
-  '대학로스타시티': { lat: 37.58179, lng: 127.0018 },
-  '아트포레스트 아트홀': { lat: 37.58096, lng: 127.0025 },
-  '라이브 썸데이즈홀 (구. 이수ENT)': { lat: 37.5812, lng: 127.0025 },
-  '대학로 스카이씨어터': { lat: 37.58086, lng: 127.0028 },
-  '굿씨어터': { lat: 37.583, lng: 127.0022 },
-  '플러스씨어터(구. 컬처스페이스 엔유 구. 쁘티첼 씨어터)': { lat: 37.58129, lng: 127.0025 },
-  '올웨이즈 씨어터(구.아티스탄홀)': { lat: 37.581, lng: 127.0019 },
-  '나인진홀 (구.청년극장)': { lat: 37.58141, lng: 127.0015 },
-  '파랑새극장(구. 샘터파랑새극장)': { lat: 37.5813, lng: 127.0016 },
-  '하마씨어터(구. 가든씨어터)': { lat: 37.58115, lng: 127.002 },
-  '상명아트홀': { lat: 37.58159, lng: 127.0015 },
-  '문화공간 엘림홀': { lat: 37.58212, lng: 127.003 },
-  'VERY (베리컴퍼니)': { lat: 37.582, lng: 127.002 },
-  '세우아트센터': { lat: 37.58117, lng: 127.0025 },
-  'SH아트홀': { lat: 37.58135, lng: 127.0015 },
-  '큐씨어터(구. 수상한흥신소전용관)': { lat: 37.58107, lng: 127.0028 },
-  '틴틴홀': { lat: 37.58082, lng: 127.002 },
-  '봄날아트홀 (구. 아리랑소극장)': { lat: 37.58177, lng: 127.0015 },
-  '대학로 자유극장 (자유문화발전소)': { lat: 37.58123, lng: 127.0025 },
-  '도토리씨어터': { lat: 37.58099, lng: 127.0025 },
-  '대학로 극장가게 (구. 문씨어터, 구. 지구인씨어터)': { lat: 37.58106, lng: 127.002 },
-  '순위아트홀1관 [대학로]': { lat: 37.58103, lng: 127.002 },
-  '대학로 두레홀 3관': { lat: 37.5805, lng: 127.0028 },
-  'D:BASE (디:베이스)': { lat: 37.58088, lng: 127.002 },
-  '아트하우스': { lat: 37.58088, lng: 127.002 },
-  '대학로 A아트홀(구. 신연아트홀)': { lat: 37.58129, lng: 127.0015 },
-  '올림아트센터 (구.스튜디오76)': { lat: 37.58227, lng: 127.003 },
-  '라온아트홀': { lat: 37.58103, lng: 127.002 },
-  '제나아트홀 (구. 룸씨어터)': { lat: 37.58106, lng: 127.002 },
-  '스타스테이지': { lat: 37.58135, lng: 127.0025 },
-  '브릭스씨어터 (구. 콘텐츠 그라운드 구. 브로드웨이아트홀 [3관])': { lat: 37.58105, lng: 127.0022 },
-  '예그린씨어터': { lat: 37.5815, lng: 127.0015 },
-  '해피씨어터': { lat: 37.58085, lng: 127.002 },
-  '스콘뮤직홀': { lat: 37.58144, lng: 127.0015 },
-  '원패스아트홀 [폐관]': { lat: 37.58135, lng: 127.0025 },
-  '비유아트홀(구. 효천아트센터 그라운드씬)': { lat: 37.58191, lng: 127.0005 },
-  'JS아트홀 (구. 고스트씨어터 구.다소니씨어터)': { lat: 37.58162, lng: 127.0015 },
-  '씨어터 벙커': { lat: 37.58188, lng: 127.003 },
-  '콘텐츠박스(구. 르메이에르 씨어터)': { lat: 37.58165, lng: 127.0015 },
-  '극장 온 (ON) (구.CJ아지트)': { lat: 37.58117, lng: 127.0025 },
-  '에이치씨어터': { lat: 37.58212, lng: 127.003 },
-  '라이프 씨어터': { lat: 37.58088, lng: 127.0011 },
-  '스튜디오 블루': { lat: 37.5805, lng: 127.0028 },
-  '졸탄극장': { lat: 37.58224, lng: 127.003 },
-  '내유외강씨어터(구. 익스트림씨어터 1관)': { lat: 37.5811, lng: 127.0018 },
-  '지인시어터(구. 알과핵소극장)': { lat: 37.58135, lng: 127.0015 },
-  'JCC 아트센터': { lat: 37.58377, lng: 127.0015 },
-  '올래홀': { lat: 37.58082, lng: 127.002 },
-  '공간아울': { lat: 37.5812, lng: 127.0017 },
-  '보라 아트홀(구. 지구인아트홀, 구. 해오름 예술극장)': { lat: 37.5815, lng: 127.0013 },
-  '마루아트홀': { lat: 37.5808, lng: 127.0028 },
-  '후암스튜디오(후암아트홀)': { lat: 37.58179, lng: 127.0018 },
-  '윈씨어터(구. 대학로갈갈이홀)': { lat: 37.58083, lng: 127.0028 },
-  '대학로 무하아트센터': { lat: 37.58206, lng: 127.003 },
-  '연극플레이스 혜화': { lat: 37.58083, lng: 127.0028 },
-  '초록씨어터': { lat: 37.5811, lng: 127.0018 },
-  '파랑씨어터 (구. 도향아트홀, 구. 뮤디스홀)': { lat: 37.58098, lng: 127.0028 },
-  '타이니앨리스': { lat: 37.58179, lng: 127.0018 },
-  '바탕골소극장': { lat: 37.58085, lng: 127.002 },
-  'JH아트홀': { lat: 37.58062, lng: 127.0028 },
-  '업스테이지 (UP Stage)': { lat: 37.58123, lng: 127.0015 },
-  '이수스타홀': { lat: 37.5812, lng: 127.0025 },
-  '서연아트홀 (구. 인아소극장)': { lat: 37.58147, lng: 127.0013 },
-  '열린극장': { lat: 37.58156, lng: 127.0013 },
-  '동숭무대소극장': { lat: 37.585, lng: 127.0015 },
-  '루미나아트홀 (구.시온아트홀)': { lat: 37.58086, lng: 127.0028 },
-  '한국방송통신대학교': { lat: 37.582, lng: 127.0018 },
-  '중앙대학교 공연예술원': { lat: 37.58188, lng: 127.003 },
-  '룸어씨어터': { lat: 37.5808, lng: 127.0028 },
-  '익스트림씨어터 3관': { lat: 37.5808, lng: 127.001 },
-  '노들장애인야학': { lat: 37.58135, lng: 127.0015 },
-  '삼형제극장(환상극장)': { lat: 37.58206, lng: 127.003 },
-  '선돌극장': { lat: 37.58405, lng: 127.0008 },
-  'R&J씨어터(구. 연진아트홀)': { lat: 37.58012, lng: 127.0025 },
-  '드림시어터 [대학로]': { lat: 37.58115, lng: 127.002 },
-  '한양레퍼토리씨어터': { lat: 37.583, lng: 127.0022 },
-  '대학로 위로홀(구. 몬스터홀)': { lat: 37.58162, lng: 127.0015 },
-  '코델아트홀': { lat: 37.58174, lng: 127.0015 },
-  'SJA HALL': { lat: 37.5819, lng: 127.002 },
-  '컬쳐씨어터(구. 휴먼시어터)': { lat: 37.5805, lng: 127.0028 },
-  '예술공간 서울': { lat: 37.58182, lng: 127.0005 },
-  '정극장 (구. M시어터, 구.하모니아트홀)': { lat: 37.58117, lng: 127.0025 },
-  '예술공간 유비누리 앱질 전용관': { lat: 37.58086, lng: 127.0028 },
-  '후암스테이지': { lat: 37.58179, lng: 127.0018 },
-  '우리소극장 [대학로]': { lat: 37.58188, lng: 127.003 },
-  '씨어터 쿰': { lat: 37.58121, lng: 127.0012 },
-  '예술공간 혜화': { lat: 37.58379, lng: 127.001 },
-  '청운예술극장(구. 글로브극장)': { lat: 37.5811, lng: 127.00245 },
-  '다케이씨어터 (구. 창조소극장, 구. 민아트홀)': { lat: 37.5815, lng: 127.0013 },
-  '달밤엔씨어터': { lat: 37.58324, lng: 127.0013 },
-  '나온씨어터': { lat: 37.58441, lng: 127.001 },
-  '소극장 혜화당 (구. 까망소극장)': { lat: 37.58099, lng: 127.0025 },
-  '소극장 축제': { lat: 37.58204, lng: 127.0018 },
-  '예술공간 오르다(구. 우석레파토리극장)': { lat: 37.58188, lng: 127.003 },
-  '탑아트홀': { lat: 37.58156, lng: 127.0015 },
-  '씨어터조이 (구. 마당세실극장)': { lat: 37.58224, lng: 127.003 },
-  '후암씨어터(콘텐츠룸)': { lat: 37.58179, lng: 127.0018 },
-  '소극장 다르게놀자': { lat: 37.58177, lng: 127.0015 },
-  '성균소극장': { lat: 37.58206, lng: 127.0005 },
-  '대학로 마로니에소극장(플레이더씨어터)': { lat: 37.5815, lng: 127.0015 },
-  '연우소극장': { lat: 37.58353, lng: 127.0015 },
-  '아름다운극장': { lat: 37.58182, lng: 127.0005 },
-  '단막극장(구.대학로단막극장)': { lat: 37.58268, lng: 127.0025 },
-  '대학로 달달씨어터': { lat: 37.5809, lng: 127.001 },
-  '스폿라이트': { lat: 37.58111, lng: 127.001 },
-  '나인 씨어터': { lat: 37.5808, lng: 127.0028 },
-  '우리네 극장': { lat: 37.58165, lng: 127.0015 },
-  '호은아트홀 (구. 키득키득아트홀)': { lat: 37.58144, lng: 127.0015 },
-  '제이원 씨어터 (구. 서완소극장, 구. 씨어터고리)': { lat: 37.58124, lng: 127.0011 },
-  '정보소극장': { lat: 37.58144, lng: 127.0025 },
-  '아루또소극장 (구. 소담소극장, 구. 코메디컬센터)': { lat: 37.58074, lng: 127.0028 },
-  '더 씨어터': { lat: 37.5805, lng: 127.0012 },
-  '달빛극장': { lat: 37.58088, lng: 127.002 },
-  '샤봉디씨어터': { lat: 37.58082, lng: 127.0011 },
-  '아스가르드 씨어터 (구. 낙산씨어터)': { lat: 37.5812, lng: 127.0015 },
-  '공공그라운드': { lat: 37.5813, lng: 127.0016 },
-  '피카소소극장': { lat: 37.58224, lng: 127.0018 },
-  '지즐소극장': { lat: 37.58182, lng: 127.0005 },
-  '댕로홀': { lat: 37.5812, lng: 127.0025 },
-  '극장 동국': { lat: 37.5815, lng: 127.0013 },
-  '스튜디오SK': { lat: 37.58215, lng: 127.0005 },
-  '노을소극장': { lat: 37.58068, lng: 127.0028 },
-  '한얼소극장': { lat: 37.58401, lng: 127.0015 },
-  '소극장 무극': { lat: 37.58204, lng: 127.0018 },
-  '소극장 공유': { lat: 37.5835, lng: 127.0016 },
-  '소극장 꿈꾸는 공작소': { lat: 37.58393, lng: 127.0012 },
-  '오마이갓 전용관': { lat: 37.58144, lng: 127.0015 },
-  '소극장 플랫폼74': { lat: 37.58162, lng: 127.0015 },
-  '연극실험실 혜화동1번지': { lat: 37.58371, lng: 127.0015 },
-  '진건아트홀': { lat: 37.58227, lng: 127.0018 },
-  '미래아트홀': { lat: 37.58368, lng: 127.0015 },
-  '안똔체홉극장': { lat: 37.58179, lng: 127.0005 },
-  '해바라기소극장 (구. 훈아트홀)': { lat: 37.58168, lng: 127.0015 },
-  '동화소극장': { lat: 37.58188, lng: 127.0005 },
-  '물빛극장': { lat: 37.58077, lng: 127.0028 },
-  '대학로 김대범소극장': { lat: 37.58179, lng: 127.0018 },
-  '써드베란다': { lat: 37.58315, lng: 127.00095 },
-  '최일화 스튜디오': { lat: 37.58162, lng: 127.0032 },
-  '풍월관': { lat: 37.58, lng: 127.0014 },
-  '소울소극장': { lat: 37.58288, lng: 127.0013 },
-  'Abnormal필운': { lat: 37.57975, lng: 127.00015 },
-  '스페이스 아이': { lat: 37.58173, lng: 127.0018 },
-  '맛있는 극장': { lat: 37.58195, lng: 127.00425 },
-  '국민대학교 제로원디자인센터': { lat: 37.58126, lng: 127.0015 },
-  '홍해성 소극장': { lat: 37.58132, lng: 127.0015 },
-  '예술공간 라푸푸': { lat: 37.58232, lng: 127.0025 },
-  '북극곰소극장(구.아뮤스소극장)': { lat: 37.58162, lng: 127.0032 },
-  'NC문화재단 홀': { lat: 37.5817, lng: 127.003 },
-  '뮤지컬펍 커튼콜': { lat: 37.58096, lng: 127.0025 },
-  '허수아비소극장': { lat: 37.58179, lng: 127.0005 },
-  '클래식고택 [경복궁]': { lat: 37.58305, lng: 126.9999 },
-  '신명나눔 공간 마루채': { lat: 37.58127, lng: 127.001 },
-  '카페CIRCA1950': { lat: 37.58095, lng: 127.001 },
-  '스케치홀 (구.소극장 선물 1관)': { lat: 37.58135, lng: 127.0015 },
-  '사사사가': { lat: 37.5813, lng: 127.0023 },
-  '명륜아트홀': { lat: 37.58194, lng: 127.0005 },
-  'et theatre 1 (구. 눈빛극장)': { lat: 37.5845, lng: 127.0012 },
-  '시윤아트홀': { lat: 37.5813, lng: 127.0016 },
-  '모모씨어터': { lat: 37.58215, lng: 127.0005 },
-  '라온씨어터': { lat: 37.58106, lng: 127.002 },
-  '정화예술대학교 대학로캠퍼스 정화1관': { lat: 37.58123, lng: 127.002 },
-  '혜화아트센터': { lat: 37.584, lng: 127.0023 },
-  '브이씨어터': { lat: 37.5845, lng: 127.0013 },
-  '글루호텔 블루레인라운지': { lat: 37.58365, lng: 127.00005 },
-  '광복극장': { lat: 37.58215, lng: 127.0005 },
-  '쿤스트카비넷': { lat: 37.58353, lng: 127.0015 },
-  '대학로 스타릿홀': { lat: 37.58083, lng: 127.0028 },
-  '대학로 일대': { lat: 37.58065, lng: 127.00405 },
-  '김동진빌딩(서울코미디클럽)[대학로]': { lat: 37.58062, lng: 127.0028 },
-  '동성고등학교': { lat: 37.584, lng: 127.0023 },
-  '원더러스트에이앤씨 (Wonderlust A&C)': { lat: 37.58027, lng: 127.0025 },
-  '아라아트홀': { lat: 37.5808, lng: 127.0028 },
-  '소극장 선물 2관': { lat: 37.5813, lng: 127.0016 },
-};
-
-function getCoords(venueName) {
-  if (!venueName) return null;
-  // 정확히 일치
-  if (VENUE_COORDS[venueName]) return VENUE_COORDS[venueName];
-  // 부분 일치
-  for (const [key, coords] of Object.entries(VENUE_COORDS)) {
-    if (venueName.includes(key) || key.includes(venueName)) return coords;
-    // 구 이름도 체크 (예: "구. 대학로뮤지컬센터" 포함된 경우)
-    const shortKey = key.split('(')[0].trim();
-    if (venueName.includes(shortKey)) return coords;
+// 대학로 공연장 코드 목록 가져오기
+async function getDaehangnoVenueCodes() {
+  const codes = [];
+  const seen = new Set();
+  for (let page = 1; page <= 10; page++) {
+    try {
+      // signgucode=11(서울), signgucodesub=11110(종로구), fcltychartr=4(민간대학로)
+      const path = `prfplc?service=${KOPIS_KEY}&cpage=${page}&rows=20&signgucode=11&signgucodesub=11110&fcltychartr=4`;
+      const xml = await fetchKopis(path);
+      const items = parseXML(xml, 'db');
+      if (!items.length) break;
+      for (const item of items) {
+        const code = getTagValue(item, 'mt10id');
+        const name = getTagValue(item, 'fcltynm');
+        const lat = parseFloat(getTagValue(item, 'la')) || null;
+        const lng = parseFloat(getTagValue(item, 'lo')) || null;
+        if (code && !seen.has(code)) {
+          seen.add(code);
+          codes.push({ code, name, lat, lng });
+        }
+      }
+    } catch(e) { break; }
   }
-  return null;
+  return codes;
 }
+
+let venueCache = null;
+let venueCacheTime = 0;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   try {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
+
+    // 공연장 코드 목록 (1시간 캐시)
+    if (!venueCache || Date.now() - venueCacheTime > 3600000) {
+      venueCache = await getDaehangnoVenueCodes();
+      venueCacheTime = Date.now();
+    }
+    const venues = venueCache;
+
+    if (!venues.length) {
+      return res.status(200).json({ success: false, error: '공연장 목록을 가져오지 못했어요', venueCount: 0, data: [] });
+    }
+
+    // 각 공연장별 공연 목록 병렬 조회
     const seenIds = new Set();
     const allPerfs = [];
 
-    // 키워드로 대학로 공연 검색 (대학로, 혜화, 동숭, 명륜)
-    const keywords = [
-      '%EB%8C%80%ED%95%99%EB%A1%9C',
-      '%ED%98%9C%ED%99%94',
-      '%EB%8F%99%EC%88%AD',
-    ];
+    await Promise.all(venues.map(async (venue) => {
+      if (!venue.lat || !venue.lng) return;
+      try {
+        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&prfplccd=${venue.code}&rows=50&cpage=1`;
+        const xml = await fetchKopis(path);
+        const items = parseXML(xml, 'db');
+        for (const item of items) {
+          const id = getTagValue(item, 'mt20id');
+          if (seenIds.has(id)) continue;
+          seenIds.add(id);
+          allPerfs.push({
+            id,
+            name: getTagValue(item, 'prfnm'),
+            startDate: getTagValue(item, 'prfpdfrom'),
+            endDate: getTagValue(item, 'prfpdto'),
+            venue: venue.name,
+            venueCode: venue.code,
+            genre: getTagValue(item, 'genrenm'),
+            status: getTagValue(item, 'prfstate'),
+            poster: getTagValue(item, 'poster'),
+            lat: venue.lat,
+            lng: venue.lng,
+          });
+        }
+      } catch(e) {}
+    }));
 
-    for (const kw of keywords) {
-      for (let page = 1; page <= 3; page++) {
-        try {
-          const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=${kw}&rows=100&cpage=${page}`;
-          const xml = await fetchKopis(path);
-          const items = parseXML(xml, 'db');
-          if (!items.length) break;
-          for (const item of items) {
-            const id = getTagValue(item, 'mt20id');
-            if (seenIds.has(id)) continue;
-            const venueName = getTagValue(item, 'fcltynm');
-            const coords = getCoords(venueName);
-            if (!coords) continue;
-            seenIds.add(id);
-            allPerfs.push({
-              id,
-              name: getTagValue(item, 'prfnm'),
-              startDate: getTagValue(item, 'prfpdfrom'),
-              endDate: getTagValue(item, 'prfpdto'),
-              venue: venueName,
-              venueCode: getTagValue(item, 'mt10id'),
-              genre: getTagValue(item, 'genrenm'),
-              status: getTagValue(item, 'prfstate'),
-              poster: getTagValue(item, 'poster'),
-              lat: coords.lat,
-              lng: coords.lng,
-            });
-          }
-        } catch(e) {}
-      }
-    }
-
-    res.status(200).json({ success: true, total: allPerfs.length, data: allPerfs });
+    res.status(200).json({
+      success: true,
+      venueCount: venues.length,
+      total: allPerfs.length,
+      data: allPerfs
+    });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
