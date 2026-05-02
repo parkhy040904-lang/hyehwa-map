@@ -34,34 +34,52 @@ function parseXML(xml, tag) {
   return results;
 }
 
-// 대학로 공연장 코드 목록 가져오기
-async function getDaehangnoVenueCodes() {
-  const codes = [];
-  const seen = new Set();
-  for (let page = 1; page <= 10; page++) {
-    try {
-      // signgucode=11(서울), signgucodesub=11110(종로구), fcltychartr=4(민간대학로)
-      const path = `prfplc?service=${KOPIS_KEY}&cpage=${page}&rows=20&signgucode=11&signgucodesub=11110&fcltychartr=4`;
-      const xml = await fetchKopis(path);
-      const items = parseXML(xml, 'db');
-      if (!items.length) break;
-      for (const item of items) {
-        const code = getTagValue(item, 'mt10id');
-        const name = getTagValue(item, 'fcltynm');
-        const lat = parseFloat(getTagValue(item, 'la')) || null;
-        const lng = parseFloat(getTagValue(item, 'lo')) || null;
-        if (code && !seen.has(code)) {
-          seen.add(code);
-          codes.push({ code, name, lat, lng });
-        }
-      }
-    } catch(e) { break; }
-  }
-  return codes;
-}
+// 대학로 주요 공연장 코드 (직접 확인된 것들)
+const KNOWN_VENUE_CODES = [
+  'FC001528', // 링크아트센터드림
+  'FC003244', // 링크아트센터
+  'FC001446', // 예스24스테이지
+  'FC001247', // 아르코예술극장
+  'FC001248', // 대학로예술극장
+  'FC000615', // 동숭아트센터
+  'FC001360', // 혜화동1번지
+  'FC001453', // 선돌극장
+  'FC000990', // 게릴라극장
+  'FC001227', // 산울림소극장
+  'FC001107', // 눈빛극장(미마지아트센터)
+  'FC001249', // 씨어터씨
+  'FC003400', // 플러스씨어터
+  'FC001540', // 예술공간혜화
+  'FC001076', // 학전
+  'FC000992', // 드림시어터
+  'FC001350', // 나온씨어터
+  'FC001570', // 수현재씨어터
+  'FC000408', // 자유소극장
+  'FC001154', // 유니플렉스
+  'FC001399', // JTN아트홀
+  'FC001537', // NOL씨어터대학로
+  'FC002430', // 홍익대대학로아트센터
+  'FC001445', // 예스24아트원
+  'FC001597', // NOL서경스퀘어
+];
 
-let venueCache = null;
-let venueCacheTime = 0;
+const venueInfoCache = {};
+
+async function getVenueInfo(code) {
+  if (venueInfoCache[code]) return venueInfoCache[code];
+  try {
+    const xml = await fetchKopis(`prfplc/${code}?service=${KOPIS_KEY}`);
+    const item = parseXML(xml, 'db')[0] || '';
+    const lat = parseFloat(getTagValue(item, 'la'));
+    const lng = parseFloat(getTagValue(item, 'lo'));
+    const name = getTagValue(item, 'fcltynm');
+    if (lat && lng) {
+      venueInfoCache[code] = { lat, lng, name };
+      return { lat, lng, name };
+    }
+  } catch(e) {}
+  return null;
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -71,25 +89,20 @@ module.exports = async (req, res) => {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
 
-    // 공연장 코드 목록 (1시간 캐시)
-    if (!venueCache || Date.now() - venueCacheTime > 3600000) {
-      venueCache = await getDaehangnoVenueCodes();
-      venueCacheTime = Date.now();
-    }
-    const venues = venueCache;
+    // 1단계: 공연장 정보(좌표) 가져오기
+    const venueInfos = {};
+    await Promise.all(KNOWN_VENUE_CODES.map(async (code) => {
+      const info = await getVenueInfo(code);
+      if (info) venueInfos[code] = info;
+    }));
 
-    if (!venues.length) {
-      return res.status(200).json({ success: false, error: '공연장 목록을 가져오지 못했어요', venueCount: 0, data: [] });
-    }
-
-    // 각 공연장별 공연 목록 병렬 조회
+    // 2단계: 각 공연장별 공연 목록 가져오기
     const seenIds = new Set();
     const allPerfs = [];
 
-    await Promise.all(venues.map(async (venue) => {
-      if (!venue.lat || !venue.lng) return;
+    await Promise.all(Object.entries(venueInfos).map(async ([code, venue]) => {
       try {
-        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&prfplccd=${venue.code}&rows=50&cpage=1`;
+        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&prfplccd=${code}&rows=50&cpage=1`;
         const xml = await fetchKopis(path);
         const items = parseXML(xml, 'db');
         for (const item of items) {
@@ -102,7 +115,7 @@ module.exports = async (req, res) => {
             startDate: getTagValue(item, 'prfpdfrom'),
             endDate: getTagValue(item, 'prfpdto'),
             venue: venue.name,
-            venueCode: venue.code,
+            venueCode: code,
             genre: getTagValue(item, 'genrenm'),
             status: getTagValue(item, 'prfstate'),
             poster: getTagValue(item, 'poster'),
@@ -115,11 +128,11 @@ module.exports = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      venueCount: venues.length,
+      venueCount: Object.keys(venueInfos).length,
       total: allPerfs.length,
       data: allPerfs
     });
-  } catch (e) {
+  } catch(e) {
     res.status(500).json({ success: false, error: e.message });
   }
 };
