@@ -34,55 +34,27 @@ function parseXML(xml, tag) {
   return results;
 }
 
-const VENUE_NAME_COORDS = [
-  { keys: ['아르코'],        lat: 37.5824, lng: 127.0018 },
-  { keys: ['대학로예술'],    lat: 37.5820, lng: 127.0025 },
-  { keys: ['혜화동1번지'],   lat: 37.5836, lng: 127.0013 },
-  { keys: ['동숭아트'],      lat: 37.5815, lng: 127.0030 },
-  { keys: ['학전'],          lat: 37.5830, lng: 127.0008 },
-  { keys: ['예술공간 혜화'], lat: 37.5845, lng: 127.0022 },
-  { keys: ['선돌'],          lat: 37.5808, lng: 127.0040 },
-  { keys: ['스튜디오76'],    lat: 37.5810, lng: 127.0015 },
-  { keys: ['홍익'],          lat: 37.5840, lng: 127.0035 },
-  { keys: ['마로니에'],      lat: 37.5826, lng: 127.0020 },
-  { keys: ['씨어터'],        lat: 37.5818, lng: 127.0028 },
-  { keys: ['산울림'],        lat: 37.5822, lng: 127.0016 },
-  { keys: ['게릴라'],        lat: 37.5812, lng: 127.0032 },
-  { keys: ['연우'],          lat: 37.5828, lng: 127.0019 },
-  { keys: ['수현재'],        lat: 37.5832, lng: 127.0011 },
-  { keys: ['대학로'],        lat: 37.5820, lng: 127.0022 },
-  { keys: ['혜화'],          lat: 37.5825, lng: 127.0020 },
-  { keys: ['동숭'],          lat: 37.5817, lng: 127.0026 },
-  { keys: ['단막'],          lat: 37.5813, lng: 127.0029 },
-  { keys: ['드림시어터'],    lat: 37.5819, lng: 127.0024 },
-  { keys: ['자유'],          lat: 37.5811, lng: 127.0031 },
-  { keys: ['눈빛'],          lat: 37.5829, lng: 127.0010 },
-  { keys: ['플러스'],        lat: 37.5816, lng: 127.0027 },
-  { keys: ['JTN'],           lat: 37.5821, lng: 127.0023 },
-  { keys: ['NOL'],           lat: 37.5818, lng: 127.0028 },
-  { keys: ['나온'],          lat: 37.5823, lng: 127.0017 },
+// 혜화/대학로 주요 공연장 코드 + 좌표
+const VENUES = [
+  { code: 'FC001247', name: '아르코예술극장',       lat: 37.5824, lng: 127.0018 },
+  { code: 'FC001248', name: '대학로예술극장',       lat: 37.5820, lng: 127.0025 },
+  { code: 'FC001528', name: '링크아트센터드림',     lat: 37.5822, lng: 127.0030 },
+  { code: 'FC003244', name: '링크아트센터',         lat: 37.5835, lng: 127.0013 },
+  { code: 'FC001446', name: 'YES24스테이지',        lat: 37.5818, lng: 127.0027 },
+  { code: 'FC000615', name: '동숭아트센터',         lat: 37.5815, lng: 127.0030 },
+  { code: 'FC001360', name: '혜화동1번지',          lat: 37.5836, lng: 127.0013 },
+  { code: 'FC001076', name: '학전블루',             lat: 37.5830, lng: 127.0008 },
+  { code: 'FC001540', name: '예술공간 혜화',        lat: 37.5845, lng: 127.0022 },
+  { code: 'FC001453', name: '선돌극장',             lat: 37.5808, lng: 127.0040 },
+  { code: 'FC000990', name: '게릴라극장',           lat: 37.5812, lng: 127.0032 },
+  { code: 'FC001227', name: '산울림소극장',         lat: 37.5822, lng: 127.0016 },
+  { code: 'FC000992', name: '드림시어터',           lat: 37.5819, lng: 127.0024 },
+  { code: 'FC001350', name: '나온씨어터',           lat: 37.5823, lng: 127.0017 },
+  { code: 'FC001570', name: '수현재씨어터',         lat: 37.5832, lng: 127.0011 },
+  { code: 'FC000408', name: '자유소극장',           lat: 37.5811, lng: 127.0031 },
+  { code: 'FC001107', name: '눈빛극장',             lat: 37.5829, lng: 127.0010 },
+  { code: 'FC001249', name: '씨어터씨',             lat: 37.5818, lng: 127.0028 },
 ];
-
-const venueCache = {};
-
-async function getVenueCoords(venueCode, venueName) {
-  if (venueCode && venueCache[venueCode]) return venueCache[venueCode];
-  if (venueName) {
-    for (const v of VENUE_NAME_COORDS) {
-      if (v.keys.some(k => venueName.includes(k))) return { lat: v.lat, lng: v.lng };
-    }
-  }
-  if (venueCode) {
-    try {
-      const xml = await fetchKopis(`prfplc/${venueCode}?service=${KOPIS_KEY}`);
-      const item = parseXML(xml, 'db')[0] || '';
-      const lat = parseFloat(getTagValue(item, 'la'));
-      const lng = parseFloat(getTagValue(item, 'lo'));
-      if (lat && lng) { venueCache[venueCode] = { lat, lng }; return { lat, lng }; }
-    } catch (e) {}
-  }
-  return { lat: 37.5825 + (Math.random() - 0.5) * 0.005, lng: 127.0020 + (Math.random() - 0.5) * 0.005 };
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -91,56 +63,37 @@ module.exports = async (req, res) => {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
     const seenIds = new Set();
-    const allItems = [];
+    const allPerfs = [];
 
-    // 1. 종로구 전체 공연 (대학로/혜화 포함)
-    for (let page = 1; page <= 3; page++) {
+    // 각 공연장 코드별로 공연 검색
+    await Promise.all(VENUES.map(async (venue) => {
       try {
-        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&signgucode=11&signgucodesub=110&rows=100&cpage=${page}`;
-        const xml = await fetchKopis(path);
-        const items = parseXML(xml, 'db');
-        if (!items.length) break;
-        for (const item of items) {
-          const id = getTagValue(item, 'mt20id');
-          if (!seenIds.has(id)) { seenIds.add(id); allItems.push(item); }
-        }
-      } catch(e) {}
-    }
-
-    // 2. 키워드 보완 검색
-    const keywords = ['%EB%8C%80%ED%95%99%EB%A1%9C', '%ED%98%9C%ED%99%94'];
-    for (const kw of keywords) {
-      try {
-        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=${kw}&rows=100&cpage=1`;
+        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&prfplccd=${venue.code}&rows=50&cpage=1`;
         const xml = await fetchKopis(path);
         const items = parseXML(xml, 'db');
         for (const item of items) {
           const id = getTagValue(item, 'mt20id');
-          if (!seenIds.has(id)) { seenIds.add(id); allItems.push(item); }
+          if (!seenIds.has(id)) {
+            seenIds.add(id);
+            allPerfs.push({
+              id,
+              name: getTagValue(item, 'prfnm'),
+              startDate: getTagValue(item, 'prfpdfrom'),
+              endDate: getTagValue(item, 'prfpdto'),
+              venue: getTagValue(item, 'fcltynm'),
+              venueCode: venue.code,
+              genre: getTagValue(item, 'genrenm'),
+              status: getTagValue(item, 'prfstate'),
+              poster: getTagValue(item, 'poster'),
+              lat: venue.lat,
+              lng: venue.lng,
+            });
+          }
         }
       } catch(e) {}
-    }
-
-    const perfs = allItems.map(item => ({
-      id: getTagValue(item, 'mt20id'),
-      name: getTagValue(item, 'prfnm'),
-      startDate: getTagValue(item, 'prfpdfrom'),
-      endDate: getTagValue(item, 'prfpdto'),
-      venue: getTagValue(item, 'fcltynm'),
-      venueCode: getTagValue(item, 'mt10id'),
-      genre: getTagValue(item, 'genrenm'),
-      status: getTagValue(item, 'prfstate'),
-      poster: getTagValue(item, 'poster'),
     }));
 
-    const withCoords = await Promise.all(
-      perfs.map(async p => {
-        const coords = await getVenueCoords(p.venueCode, p.venue);
-        return { ...p, ...coords };
-      })
-    );
-
-    res.status(200).json({ success: true, total: withCoords.length, data: withCoords });
+    res.status(200).json({ success: true, total: allPerfs.length, data: allPerfs });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
