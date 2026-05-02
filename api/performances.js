@@ -34,28 +34,22 @@ function parseXML(xml, tag) {
   return results;
 }
 
-// 캐시 (서버 인스턴스 살아있는 동안)
 let venueListCache = null;
 let venueListCacheTime = 0;
 const venueCoordCache = {};
 
-// 1. 대학로 지역 공연장 전체 목록 가져오기
-async function getDaehangnoVenues() {
-  // 1시간 캐시
-  if (venueListCache && Date.now() - venueListCacheTime < 3600000) {
-    return venueListCache;
-  }
+// 종로구 공연시설 전체 가져오기
+async function getJongnoVenues() {
+  if (venueListCache && Date.now() - venueListCacheTime < 3600000) return venueListCache;
 
   const venues = [];
-  // KOPIS 공연시설 목록 API - 대학로 지역(fcltychartr=000007), 종로구
-  // signgucode=11 서울, signgucodesub=11110 종로구
+  // signgucode=11(서울), signgucodesub=11110(종로구)
   for (let page = 1; page <= 5; page++) {
     try {
-      const path = `prfplc?service=${KOPIS_KEY}&signgucode=11&signgucodesub=11110&rows=100&cpage=${page}&fcltychartr=000007`;
+      const path = `prfplc?service=${KOPIS_KEY}&signgucode=11&signgucodesub=11110&rows=100&cpage=${page}`;
       const xml = await fetchKopis(path);
       const items = parseXML(xml, 'db');
       if (!items.length) break;
-      
       for (const item of items) {
         venues.push({
           code: getTagValue(item, 'mt10id'),
@@ -70,7 +64,6 @@ async function getDaehangnoVenues() {
   return venues;
 }
 
-// 2. 공연장 좌표 조회 (캐싱)
 async function getVenueCoords(venueCode) {
   if (venueCoordCache[venueCode]) return venueCoordCache[venueCode];
   try {
@@ -86,6 +79,11 @@ async function getVenueCoords(venueCode) {
   return null;
 }
 
+// 혜화/대학로 좌표 범위 (위도 37.578~37.587, 경도 126.998~127.007)
+function isHyehwa(lat, lng) {
+  return lat >= 37.578 && lat <= 37.588 && lng >= 126.998 && lng <= 127.008;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -93,24 +91,21 @@ module.exports = async (req, res) => {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
 
-    // 1. 대학로 지역 공연장 전체 목록
-    const venues = await getDaehangnoVenues();
-
-    // 2. 각 공연장별 공연 + 좌표 병렬 조회
+    const venues = await getJongnoVenues();
     const seenIds = new Set();
     const allPerfs = [];
 
     await Promise.all(venues.map(async (venue) => {
       try {
-        // 공연 목록
+        const coords = await getVenueCoords(venue.code);
+        if (!coords) return;
+        // 혜화/대학로 범위 밖이면 스킵
+        if (!isHyehwa(coords.lat, coords.lng)) return;
+
         const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&prfplccd=${venue.code}&rows=50&cpage=1`;
         const xml = await fetchKopis(path);
         const items = parseXML(xml, 'db');
         if (!items.length) return;
-
-        // 좌표 조회
-        const coords = await getVenueCoords(venue.code);
-        if (!coords) return;
 
         for (const item of items) {
           const id = getTagValue(item, 'mt20id');
