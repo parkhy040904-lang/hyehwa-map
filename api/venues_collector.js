@@ -28,9 +28,8 @@ function parseXML(xml, tag) {
   return results;
 }
 
-// 혜화/대학로 좌표 범위
 function isHyehwa(lat, lng) {
-  return lat >= 37.576 && lat <= 37.590 && lng >= 126.995 && lng <= 127.010;
+  return lat >= 37.576 && lat <= 37.592 && lng >= 126.995 && lng <= 127.012;
 }
 
 module.exports = async (req, res) => {
@@ -38,15 +37,19 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
   const from = parseInt((req.query || {}).from || 1000);
-  const to = parseInt((req.query || {}).to || 1100);
+  const to = parseInt((req.query || {}).to || 1200);
 
-  try {
-    const codes = [];
-    for (let i = from; i <= to; i++) {
-      codes.push(`FC${String(i).padStart(6, '0')}`);
-    }
+  const codes = [];
+  for (let i = from; i <= to; i++) {
+    codes.push(`FC${String(i).padStart(6, '0')}`);
+  }
 
-    const results = await Promise.all(codes.map(async (code) => {
+  // 50개씩 배치로 처리
+  const BATCH = 50;
+  const venues = [];
+  for (let i = 0; i < codes.length; i += BATCH) {
+    const batch = codes.slice(i, i + BATCH);
+    const results = await Promise.all(batch.map(async (code) => {
       try {
         const xml = await fetchKopis(`prfplc/${code}?service=${KOPIS_KEY}`);
         const item = parseXML(xml, 'db')[0] || '';
@@ -54,23 +57,11 @@ module.exports = async (req, res) => {
         const lat = parseFloat(getTagValue(item, 'la'));
         const lng = parseFloat(getTagValue(item, 'lo'));
         if (!isHyehwa(lat, lng)) return null;
-        return {
-          code,
-          name: getTagValue(item, 'fcltynm'),
-          lat, lng,
-          chartr: getTagValue(item, 'fcltychartr')
-        };
+        return { code, name: getTagValue(item, 'fcltynm'), lat, lng };
       } catch(e) { return null; }
     }));
-
-    const venues = results.filter(Boolean);
-    res.status(200).json({
-      success: true,
-      range: `FC${String(from).padStart(6,'0')} ~ FC${String(to).padStart(6,'0')}`,
-      found: venues.length,
-      venues
-    });
-  } catch(e) {
-    res.status(500).json({ success: false, error: e.message });
+    venues.push(...results.filter(Boolean));
   }
+
+  res.status(200).json({ success: true, range: `${from}~${to}`, found: venues.length, venues });
 };
