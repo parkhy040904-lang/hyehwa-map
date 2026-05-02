@@ -55,10 +55,12 @@ const VENUE_NAME_COORDS = [
   { keys: ['동숭'],          lat: 37.5817, lng: 127.0026 },
   { keys: ['단막'],          lat: 37.5813, lng: 127.0029 },
   { keys: ['드림시어터'],    lat: 37.5819, lng: 127.0024 },
-  { keys: ['나온'],          lat: 37.5823, lng: 127.0017 },
   { keys: ['자유'],          lat: 37.5811, lng: 127.0031 },
   { keys: ['눈빛'],          lat: 37.5829, lng: 127.0010 },
   { keys: ['플러스'],        lat: 37.5816, lng: 127.0027 },
+  { keys: ['JTN'],           lat: 37.5821, lng: 127.0023 },
+  { keys: ['NOL'],           lat: 37.5818, lng: 127.0028 },
+  { keys: ['나온'],          lat: 37.5823, lng: 127.0017 },
 ];
 
 const venueCache = {};
@@ -88,12 +90,25 @@ module.exports = async (req, res) => {
   try {
     const stdate = getDateStr(0);
     const eddate = getDateStr(2);
-
-    // 대학로 + 혜화 + 동숭 세 가지로 검색해서 합치기
-    const keywords = ['%EB%8C%80%ED%95%99%EB%A1%9C', '%ED%98%9C%ED%99%94', '%EB%8F%99%EC%88%AD'];
-    const allItems = [];
     const seenIds = new Set();
+    const allItems = [];
 
+    // 1. 종로구 전체 공연 (대학로/혜화 포함)
+    for (let page = 1; page <= 3; page++) {
+      try {
+        const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&signgucode=11&signgucodesub=110&rows=100&cpage=${page}`;
+        const xml = await fetchKopis(path);
+        const items = parseXML(xml, 'db');
+        if (!items.length) break;
+        for (const item of items) {
+          const id = getTagValue(item, 'mt20id');
+          if (!seenIds.has(id)) { seenIds.add(id); allItems.push(item); }
+        }
+      } catch(e) {}
+    }
+
+    // 2. 키워드 보완 검색
+    const keywords = ['%EB%8C%80%ED%95%99%EB%A1%9C', '%ED%98%9C%ED%99%94'];
     for (const kw of keywords) {
       try {
         const path = `pblprfr?service=${KOPIS_KEY}&stdate=${stdate}&eddate=${eddate}&shprfnmfct=${kw}&rows=100&cpage=1`;
@@ -125,7 +140,7 @@ module.exports = async (req, res) => {
       })
     );
 
-    res.status(200).json({ success: true, data: withCoords });
+    res.status(200).json({ success: true, total: withCoords.length, data: withCoords });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
